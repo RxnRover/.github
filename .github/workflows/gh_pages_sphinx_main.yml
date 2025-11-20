@@ -1,0 +1,40 @@
+name: Sphinx Docs Generation for GitHub Pages
+
+on:
+  workflow_call:
+    inputs:
+      python:
+        required: false
+        type: string
+        default: "3.13"
+
+jobs:
+  build_docs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      - name: Fetch Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ inputs.python }}
+
+      - name: Install tox
+        run: |
+          pip install tox
+
+      - name: Build documentation
+        run: |
+          tox run -e docs
+
+      # Deploys the website to the gh-pages branch
+      - name: Deploy GitHub Pages
+        # Trigger on push to the default branch (usually 'master' or 'main')
+        # as well as if triggered manually with a workspace dispatch event.
+        if: ${{ github.ref_name == github.event.repository.default_branch && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/build/html
